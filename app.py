@@ -6,21 +6,21 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 # ── Credentials (set these in Render's Environment tab) ──────────────────────
-APP_ID          = os.environ.get("cli_aa886af21e399ed4")
-APP_SECRET      = os.environ.get("WwEw66biXlxhQ3CCu9eScerUX6KMZboq")
-BASE_APP_TOKEN  = os.environ.get("JAIQbyZD3aVQEisHC2zlfSDOgJc")
+APP_ID         = os.environ.get("APP_ID")
+APP_SECRET     = os.environ.get("APP_SECRET")
+BASE_APP_TOKEN = os.environ.get("BASE_APP_TOKEN")
 
 # ── Table map: add/edit your table names and IDs here ────────────────────────
 TABLE_MAP = {
-    "Tổng quan đơn hàng":   "blkhARjQKxOu7I0K",
-    "Tổng quan Tiếp nhận đơn hàng":  "blkRRV5owoRRwOjh",
-    "Tài liệu hướng dẫn sử dụng": "ldxzHmUKmh6YJhQB",
-    "Danh mục vật tư":   "tbldV58aMuimDFZJ&view=vewggpSSC7",
-    "Danh mục khách hàng":  "tblGp113BFUBq4GY&view=vewo75BSeI",
-    "Danh mục vai trò truy cập": "tblbNPiAOJMclhyK&view=vewhF9LjCO",
-    "Đặt hàng":     "tbl1i96WQXyBmx9U&view=vewITlqAp9",	
-    "1.1 Đơn xin giá tốt":   "tblYP6yRNENOfuyy&view=vewH6ORQ7y",
-    "1.2 QL Đơn xin giá tốt":  "tblxIRPJ2EShbbRn&view=vewiXd6Ic7",	
+    "tổng quan đơn hàng":                "blkhARjQKxOu7I0K",
+    "tổng quan tiếp nhận đơn hàng":      "blkRRV5owoRRwOjh",
+    "tài liệu hướng dẫn sử dụng":        "ldxzHmUKmh6YJhQB",
+    "danh mục vật tư":                   "tbldV58aMuimDFZJ",
+    "danh mục khách hàng":               "tblGp113BFUBq4GY",
+    "danh mục vai trò truy cập":         "tblbNPiAOJMclhyK",
+    "đặt hàng":                          "tbl1i96WQXyBmx9U",
+    "đơn xin giá tốt":                   "tblYP6yRNENOfuyy",
+    "ql đơn xin giá tốt":                "tblxIRPJ2EShbbRn",
 }
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
