@@ -82,21 +82,37 @@ def send_reply(message_id, text, token):
 # ── Webhook endpoint ──────────────────────────────────────────────────────────
 @app.route("/webhook", methods=["POST"])
 def webhook():
+    # Log the raw incoming request
+    raw = request.get_data(as_text=True)
+    print("RAW BODY:", raw)
+    print("HEADERS:", dict(request.headers))
+
     data = request.json
-    print("Payload received:", data)  # Log để kiểm tra
+    print("PARSED JSON:", data)
 
-    # 1. Handle Lark's URL verification challenge
+    # Handle challenge - check all possible locations
+    # Sometimes Lark wraps it under a different key
+    if not data:
+        return jsonify({"error": "no data"}), 200
+
+    # Case 1: challenge at top level {"challenge": "..."}
     if "challenge" in data:
-        # Trả về đúng định dạng JSON mà Lark yêu cầu
-        return jsonify({"challenge": data["challenge"]}), 200
+        challenge_val = data["challenge"]
+        print("CHALLENGE FOUND (top level):", challenge_val)
+        return jsonify({"challenge": challenge_val}), 200
 
-    # 2. Extract the message
+    # Case 2: challenge nested under "event"
+    if data.get("event", {}).get("challenge"):
+        challenge_val = data["event"]["challenge"]
+        print("CHALLENGE FOUND (nested):", challenge_val)
+        return jsonify({"challenge": challenge_val}), 200
+
+    # Normal message handling below...
     try:
         event    = data.get("event", {})
         msg      = event.get("message", {})
         msg_type = msg.get("message_type", "")
 
-        # Chỉ xử lý text messages
         if msg_type != "text":
             return jsonify({"status": "ignored"}), 200
 
@@ -104,7 +120,6 @@ def webhook():
         raw_content = msg.get("content", "{}")
         user_text   = json.loads(raw_content).get("text", "").strip()
 
-        # Nếu có @mention thì bỏ đi để lấy nội dung thực
         if user_text.startswith("@"):
             user_text = " ".join(user_text.split()[1:]).strip()
 
@@ -115,33 +130,29 @@ def webhook():
     if not user_text:
         return jsonify({"status": "empty"}), 200
 
-    # 3. Get access token
     token = get_tenant_token()
     if not token:
         print("Failed to get tenant token")
         return jsonify({"status": "no_token"}), 200
 
-    # 4. Detect which table to query
     table_keyword, table_id = detect_table(user_text)
 
     if not table_id:
         available = ", ".join(TABLE_MAP.keys())
         send_reply(
             message_id,
-            f"I'm not sure which table to look in.\n"
-            f"Try mentioning one of these topics: {available}",
+            f"Tôi không chắc nên tra bảng nào.\n"
+            f"Hãy thử nhắc đến một trong các chủ đề: {available}",
             token
         )
         return jsonify({"status": "no_table"}), 200
 
-    # 5. Query Lark Base
     records, error = query_table(table_id, token)
 
     if error:
-        send_reply(message_id, f"Sorry, I ran into an error: {error}", token)
+        send_reply(message_id, f"Xin lỗi, có lỗi xảy ra: {error}", token)
         return jsonify({"status": "query_error"}), 200
 
-    # 6. Format and send the reply
     reply = format_records(records, table_keyword)
     send_reply(message_id, reply, token)
 
