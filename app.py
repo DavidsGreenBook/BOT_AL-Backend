@@ -83,42 +83,43 @@ def send_reply(message_id, text, token):
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
+    print("Payload received:", data)  # Log để kiểm tra
 
     # 1. Handle Lark's URL verification challenge
     if "challenge" in data:
+        # Trả về đúng định dạng JSON mà Lark yêu cầu
         return jsonify({"challenge": data["challenge"]}), 200
 
     # 2. Extract the message
     try:
-        event   = data.get("event", {})
-        msg     = event.get("message", {})
+        event    = data.get("event", {})
+        msg      = event.get("message", {})
         msg_type = msg.get("message_type", "")
 
-        # Only handle text messages
+        # Chỉ xử lý text messages
         if msg_type != "text":
-            return jsonify({"code": 0})
+            return jsonify({"status": "ignored"}), 200
 
         message_id  = msg.get("message_id")
         raw_content = msg.get("content", "{}")
         user_text   = json.loads(raw_content).get("text", "").strip()
 
-        # Strip @mention tags if the bot was @mentioned in the group
-        # Lark wraps mentions like: @_user_1 actual text
+        # Nếu có @mention thì bỏ đi để lấy nội dung thực
         if user_text.startswith("@"):
             user_text = " ".join(user_text.split()[1:]).strip()
 
     except Exception as e:
         print(f"Error parsing message: {e}")
-        return jsonify({"code": 0})
+        return jsonify({"status": "error"}), 200
 
     if not user_text:
-        return jsonify({"code": 0})
+        return jsonify({"status": "empty"}), 200
 
     # 3. Get access token
     token = get_tenant_token()
     if not token:
         print("Failed to get tenant token")
-        return jsonify({"code": 0})
+        return jsonify({"status": "no_token"}), 200
 
     # 4. Detect which table to query
     table_keyword, table_id = detect_table(user_text)
@@ -131,20 +132,20 @@ def webhook():
             f"Try mentioning one of these topics: {available}",
             token
         )
-        return jsonify({"code": 0})
+        return jsonify({"status": "no_table"}), 200
 
     # 5. Query Lark Base
     records, error = query_table(table_id, token)
 
     if error:
         send_reply(message_id, f"Sorry, I ran into an error: {error}", token)
-        return jsonify({"code": 0})
+        return jsonify({"status": "query_error"}), 200
 
     # 6. Format and send the reply
     reply = format_records(records, table_keyword)
     send_reply(message_id, reply, token)
 
-    return jsonify({"code": 0})
+    return jsonify({"status": "ok"}), 200
 
 # ── Health check (useful for Render + UptimeRobot) ────────────────────────────
 @app.route("/", methods=["GET"])
