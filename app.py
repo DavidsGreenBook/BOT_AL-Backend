@@ -86,7 +86,7 @@ def webhook():
 
     # 1. Handle Lark's URL verification challenge
     if "challenge" in data:
-        return jsonify({"challenge": data["challenge"]})
+        return jsonify({"challenge": data["challenge"]}), 200
 
     # 2. Extract the message
     try:
